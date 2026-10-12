@@ -4,4 +4,4 @@
 #
 
 PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/clover_mumba.mk
+    $(LOCAL_DIR)/mumba.mk

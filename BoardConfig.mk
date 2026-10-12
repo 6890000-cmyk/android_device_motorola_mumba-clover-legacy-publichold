@@ -131,7 +131,7 @@ BOARD_VENDOR_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE := $(RAMDISK_MODULES_PATH)/mo
 BOARD_USES_METADATA_PARTITION := true
 
 # Partitions
--include vendor/clover/config/BoardConfigReservedSize.mk
+-include vendor/lineage/config/BoardConfigReservedSize.mk
 BOARD_BUILD_VENDOR_RAMDISK_IMAGE := true
 
 BOARD_FLASH_BLOCK_SIZE := 131072 # (BOARD_KERNEL_PAGESIZE * 32)
@@ -207,7 +207,7 @@ ODM_MANIFEST_NE_FILES := $(DEVICE_PATH)/sku/manifest_ne.xml
 ENABLE_VENDOR_RIL_SERVICE := true
 
 # SEPolicy
-include device/clover/sepolicy/libperfmgr/sepolicy.mk
+include device/lineage/sepolicy/libperfmgr/sepolicy.mk
 include device/qcom/sepolicy_vndr/SEPolicy.mk
 include hardware/motorola/sepolicy/qti/SEPolicy.mk
 

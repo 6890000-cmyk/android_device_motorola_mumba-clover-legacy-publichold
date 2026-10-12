@@ -265,9 +265,7 @@ PRODUCT_PACKAGES += \
     MotoActions \
     MotoCommonOverlay
 
-# Overlay
-DEVICE_PACKAGE_OVERLAYS += \
-    $(LOCAL_PATH)/overlay-clover
+# Overlay: Clover overlay removed for Evolution X
 
 PRODUCT_ENFORCE_RRO_TARGETS := *
 
@@ -377,7 +375,7 @@ PRODUCT_SOONG_NAMESPACES += \
     $(LOCAL_PATH) \
     hardware/google/interfaces \
     hardware/google/pixel/power-libperfmgr \
-    hardware/clover/interfaces/power-libperfmgr \
+    hardware/lineage/interfaces/power-libperfmgr \
     hardware/qcom-caf/common/libqti-perfd-client \
     hardware/motorola
 
