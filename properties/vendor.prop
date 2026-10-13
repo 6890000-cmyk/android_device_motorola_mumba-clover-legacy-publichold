@@ -441,3 +441,6 @@ persist.sys.wfd.virtual=0
 
 # ZRAM
 ro.vendor.zram.swapon=true
+
+# ported from JNWSG: keep the modem off at boot (saves power)
+persist.vendor.radio.poweron_opt=0
