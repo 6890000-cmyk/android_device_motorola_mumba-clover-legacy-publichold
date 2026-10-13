@@ -528,3 +528,17 @@ EXPORT_KERNEL_VARS_TO_SOONG := \
     TARGET_PREBUILT_KERNEL_HEADERS
 
 $(foreach v,$(EXPORT_KERNEL_VARS_TO_SOONG),$(call soong_config_set,lineageVarsPlugin,$(v),$($(v))))
+
+# --- mumba: CAF soong 命名空间导出 ---
+# hardware/qcom-caf/*/Android.bp 是符号链接，内容声明了 soong_namespace，
+# 不导出的话其下模块（audio/display/ipacm 等）在 kati 检查里会被判为不存在。
+PRODUCT_SOONG_NAMESPACES += \
+    hardware/qcom-caf/sm8450-6.6 \
+    hardware/qcom-caf/sm8450-6.6/data-ipa-cfg-mgr \
+    vendor/qcom/opensource/audio-hal/st-hal \
+    vendor/qcom/opensource/audio-hal/st-hal-ar \
+    vendor/qcom/opensource/commonsys-intf/display \
+    vendor/qcom/opensource/dataservices \
+    vendor/qcom/opensource/display \
+    vendor/qcom/opensource/interfaces/qacs/ambientdatacapture \
+    vendor/qcom/opensource/data-ipa-cfg-mgr-legacy-um
