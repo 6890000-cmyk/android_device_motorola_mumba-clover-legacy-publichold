@@ -528,3 +528,10 @@ EXPORT_KERNEL_VARS_TO_SOONG := \
 
 $(foreach v,$(EXPORT_KERNEL_VARS_TO_SOONG),$(call soong_config_set,lineageVarsPlugin,$(v),$($(v))))
 
+
+# --- ported: sensors hals.conf + double-tap device files ---
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/sensors/hals.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/hals.conf
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/configs/dt2w/double-tap.kl:$(TARGET_COPY_OUT_VENDOR)/usr/keylayout/double-tap.kl \
+    $(LOCAL_PATH)/configs/dt2w/double-tap.idc:$(TARGET_COPY_OUT_VENDOR)/usr/idc/double-tap.idc
