@@ -377,6 +377,9 @@ PRODUCT_SOONG_NAMESPACES += \
     hardware/google/pixel/power-libperfmgr \
     hardware/lineage/interfaces/power-libperfmgr \
     hardware/qcom-caf/common/libqti-perfd-client \
+    hardware/qcom-caf/wlan \
+    hardware/qcom-caf/wlan/qcwcn \
+    hardware/qcom/wlan \
     hardware/motorola
 
 # Storage
@@ -505,3 +508,23 @@ PRODUCT_PACKAGES += \
 # Inherit from the proprietary files makefile.
 $(call inherit-product, vendor/motorola/mumba/mumba-vendor.mk)
 $(call inherit-product-if-exists, vendor/motorola/mumba-motcamera/mumba-motcamera-vendor.mk)
+
+# --- Evo X/mumba: 在 product 阶段把 lineage 变量注册给 soong ---
+# Evo X 的构建流程里 BoardConfig 阶段的 SOONG_CONFIG 注册没有传到 soong.variables，
+# 导致 vendor/lineage 的 lineage_generator 报 "unknown variable"。
+# 这里用 soong_config_set 在 product 阶段重新注册（值允许为空）。
+EXPORT_KERNEL_VARS_TO_SOONG := \
+    KERNEL_ARCH \
+    KERNEL_BUILD_OUT_PREFIX \
+    KERNEL_CROSS_COMPILE \
+    KERNEL_MAKE_CMD \
+    KERNEL_MAKE_FLAGS \
+    KERNEL_PATH \
+    PATH_OVERRIDE_SOONG \
+    TARGET_KERNEL_CONFIG \
+    TARGET_KERNEL_SOURCE \
+    TARGET_KERNEL_PLATFORM_TARGET \
+    TARGET_MAX_PAGE_SIZE_SUPPORTED \
+    TARGET_PREBUILT_KERNEL_HEADERS
+
+$(foreach v,$(EXPORT_KERNEL_VARS_TO_SOONG),$(call soong_config_set,lineageVarsPlugin,$(v),$($(v))))
