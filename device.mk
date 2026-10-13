@@ -537,8 +537,5 @@ PRODUCT_SOONG_NAMESPACES += \
     hardware/qcom-caf/sm8450-6.6/data-ipa-cfg-mgr \
     vendor/qcom/opensource/audio-hal/st-hal \
     vendor/qcom/opensource/audio-hal/st-hal-ar \
-    vendor/qcom/opensource/commonsys-intf/display \
     vendor/qcom/opensource/dataservices \
-    vendor/qcom/opensource/display \
     vendor/qcom/opensource/interfaces/qacs/ambientdatacapture \
-    vendor/qcom/opensource/data-ipa-cfg-mgr-legacy-um
