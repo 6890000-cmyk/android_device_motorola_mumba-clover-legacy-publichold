@@ -207,6 +207,9 @@ ODM_MANIFEST_NE_FILES := $(DEVICE_PATH)/sku/manifest_ne.xml
 ENABLE_VENDOR_RIL_SERVICE := true
 
 # SEPolicy
+# mumba: 引入 Lineage 公共 sepolicy（提供 hal_attribute_lineage 等宏；
+# 缺失会让 system/sepolicy 的 pub_policy.cil / system_ext_sepolicy.cil 编译失败）
+include device/lineage/sepolicy/common/sepolicy.mk
 include device/lineage/sepolicy/libperfmgr/sepolicy.mk
 include device/qcom/sepolicy_vndr/SEPolicy.mk
 include hardware/motorola/sepolicy/qti/SEPolicy.mk
