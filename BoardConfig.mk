@@ -254,3 +254,8 @@ WPA_SUPPLICANT_VERSION := VER_0_8_X
 # Include the proprietary files BoardConfig.
 include vendor/motorola/mumba/BoardConfigVendor.mk
 -include vendor/motorola/mumba-motcamera/BoardConfigVendor.mk
+
+# --- mumba: 预编译内核，变量需在设备 BoardConfig 里重新导出给 soong ---
+SOONG_CONFIG_lineageVarsPlugin_TARGET_KERNEL_SOURCE := $(TARGET_KERNEL_SOURCE)
+SOONG_CONFIG_lineageVarsPlugin_KERNEL_MAKE_CMD := make
+SOONG_CONFIG_lineageVarsPlugin_KERNEL_ARCH := arm64
