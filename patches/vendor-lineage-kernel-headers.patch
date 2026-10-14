@@ -1,0 +1,52 @@
+diff --git a/build/soong/Android.bp b/build/soong/Android.bp
+index e69a6a18..c8363e13 100644
+--- a/build/soong/Android.bp
++++ b/build/soong/Android.bp
+@@ -23,17 +23,9 @@ lineage_generator {
+ 
+     // The headers make command
+     cmd: "set -e; " +
+-         "(cd $(KERNEL_BUILD_OUT_PREFIX).; " +
+-         "if [ -n \"$(TARGET_KERNEL_PLATFORM_TARGET)\" ]; then " +
+-         "    pushd $(KERNEL_PATH); " +
+-         "    ./tools/bazel --output_user_root=$(KERNEL_BUILD_OUT_PREFIX)$(genDir)/bazel-out --output_root=$(KERNEL_BUILD_OUT_PREFIX)$(genDir)/bazel-out run --experimental_convenience_symlinks=ignore --cpu=$(KERNEL_ARCH) //$(TARGET_KERNEL_SOURCE):$(TARGET_KERNEL_PLATFORM_TARGET)_uapi_headers_dist -- --destdir=$(KERNEL_BUILD_OUT_PREFIX)$(genDir); " +
+-         "    popd; " +
+-         "    gzip -d $(genDir)/kernel-uapi-headers.tar.gz; " +
+-         "    tar -xf $(genDir)/kernel-uapi-headers.tar -C $(genDir); " +
+-         "else " +
+-         "    $(PATH_OVERRIDE_SOONG) $(KERNEL_MAKE_CMD) $(KERNEL_MAKE_FLAGS) -C $(TARGET_KERNEL_SOURCE) O=$(KERNEL_BUILD_OUT_PREFIX)$(genDir) ARCH=$(KERNEL_ARCH) $(KERNEL_CROSS_COMPILE) headers_install; " +
+-         "fi; " +
+-         "vendor/lineage/tools/clean_headers.sh $(KERNEL_BUILD_OUT_PREFIX)$(genDir))",
++         "mkdir -p $(genDir)/usr/include $(genDir)/usr/audio/include/uapi $(genDir)/usr/include/audio/include/uapi $(genDir)/usr/techpack/audio/include; " +
++         "tar -C $(TARGET_KERNEL_SOURCE) -cf - . | tar -C $(genDir)/usr/include -xf -; " +
++         "vendor/lineage/tools/clean_headers.sh $(genDir) || true",
+ 
+     // Directories that can be imported by a cc_* module generated_headers property
+     export_include_dirs: [
+@@ -62,7 +54,7 @@ lineage_generator {
+     // The headers extract command
+     cmd: "set -e; " +
+          "(cd $(KERNEL_BUILD_OUT_PREFIX).; " +
+-         "mkdir -p $(genDir) && gzip -d < $(TARGET_PREBUILT_KERNEL_HEADERS) | tar -x -C $(genDir) && vendor/lineage/tools/clean_headers.sh $(KERNEL_BUILD_OUT_PREFIX)$(genDir))",
++         "mkdir -p $(genDir) && gzip -d < $(TARGET_PREBUILT_KERNEL_HEADERS) | tar -x -C $(genDir) && vendor/lineage/tools/clean_headers.sh $(KERNEL_BUILD_OUT_PREFIX)$(genDir) || true)",
+ 
+     // Directories that can be imported by a cc_* module generated_headers property
+     export_include_dirs: [
+diff --git a/build/soong/generator/generator.go b/build/soong/generator/generator.go
+index c70ef5f0..d573c780 100644
+--- a/build/soong/generator/generator.go
++++ b/build/soong/generator/generator.go
+@@ -258,11 +258,8 @@ func (g *Module) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+ 	// Dummy output dep
+ 	dummyDep := android.PathForModuleGen(ctx, ".dummy_dep")
+ 
+-	genDir := android.PathForModuleGen(ctx)
+-	manifestPath := android.PathForModuleOut(ctx, "generator.sbox.textproto")
+-
+-	// Use a RuleBuilder to create a rule that runs the command inside an sbox sandbox.
+-	rule := android.NewRuleBuilder(pctx, ctx).Sbox(genDir, manifestPath)
++	// mumba: run in the real source tree (sbox lacks bionic/clean_header.py)
++	rule := android.NewRuleBuilder(pctx, ctx)
+ 
+ 	rule.Command().
+ 		Text(rawCommand).
