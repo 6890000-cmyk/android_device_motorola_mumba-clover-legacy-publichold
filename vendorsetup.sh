@@ -37,9 +37,20 @@ clone_if_missing "https://github.com/parmodjiris-source/android_hardware_dolby.g
 
 echo "--- Source Sync Complete ---"
 
-# --- mumba: vendor/lineage 内核头规则补丁（按内核模式自动识别） ---
-# 预编译内核模式（当前）: 需要 tar 版补丁
-# OSS 源码内核模式        : 必须撤销 tar 版补丁，并另行处理内核头生成（make 被 PATH 白名单禁止）
+# --- mumba: 上游仓库补丁自动应用（repo sync 后会重新打上） ---
+
+# 1) gralloc 源码与头文件版本不匹配（reserved_size 只存在于 METADATA_V2）
+apply_mumba_gralloc_fix() {
+    local top="${ANDROID_BUILD_TOP:-$(pwd)}"
+    local f="$top/hardware/qcom-caf/sm8450-6.6/display/hal/gralloc/gr_utils.cpp"
+    local fix="$top/device/motorola/mumba/patches/fix-gralloc-gr_utils.py"
+    [ -f "$f" ] && [ -f "$fix" ] || return 0
+    grep -q 'MFIX_METADATA_V2' "$f" && return 0
+    echo "--- mumba: fixing gralloc gr_utils.cpp (METADATA_V2 guard) ---"
+    python3 "$fix" >/dev/null 2>&1 || echo "!!! mumba: gralloc 补丁失败，显示 HAL 可能编译不过 !!!"
+}
+
+# 2) vendor/lineage 内核头规则（按内核模式自动应用/撤销）
 apply_mumba_vendor_patch() {
     local top="${ANDROID_BUILD_TOP:-$(pwd)}"
     local repo="$top/vendor/lineage"
@@ -55,7 +66,6 @@ apply_mumba_vendor_patch() {
     fi
 
     if grep -q 'TARGET_FORCE_PREBUILT_KERNEL := true' "$bc" 2>/dev/null; then
-        # ---- 预编译内核模式 ----
         [ "$applied" = 1 ] && return 0
         echo "--- mumba: applying vendor/lineage kernel-header patch (prebuilt-kernel mode) ---"
         if git -C "$repo" apply "$patch" 2>/dev/null || ( cd "$repo" && patch -p1 -N < "$patch" >/dev/null 2>&1 ); then
@@ -64,7 +74,6 @@ apply_mumba_vendor_patch() {
             echo "!!! mumba: vendor/lineage 补丁应用失败，内核头规则会报错，请手动检查 !!!"
         fi
     else
-        # ---- OSS 源码内核模式 ----
         if [ "$applied" = 1 ]; then
             echo "--- mumba: OSS 内核模式，撤销预编译模式的 tar 补丁 ---"
             git -C "$repo" apply --reverse "$patch" 2>/dev/null \
@@ -74,4 +83,6 @@ apply_mumba_vendor_patch() {
         echo "--- mumba: 提醒：OSS 模式下内核头生成规则需重新处理（make 被 PATH 白名单禁止），见 OSS内核切换备忘.md 第 7.3 节 ---"
     fi
 }
+
+apply_mumba_gralloc_fix
 apply_mumba_vendor_patch
