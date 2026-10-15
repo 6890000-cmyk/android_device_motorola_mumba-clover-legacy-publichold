@@ -73,6 +73,24 @@ apply_mumba_display_fixes() {
             || echo "!!! mumba: libsdmdal display_headers 补丁未生效，SDM HAL 会编译失败 !!!"
     fi
 
+    # 4) libqdutils / gpu_tonemapper / composer / composer_test_service 缺 display_intf_headers
+    if ! grep -q 'display_intf_headers' "$dis/hal/libqdutils/Android.bp" 2>/dev/null \
+       || ! grep -q 'display_intf_headers' "$dis/hal/composer/Android.bp" 2>/dev/null; then
+        python3 "$d/fix-display-intf-headers.py" >/dev/null 2>&1
+        if grep -q 'display_intf_headers' "$dis/hal/libqdutils/Android.bp" 2>/dev/null \
+           && grep -q 'display_intf_headers' "$dis/hal/gpu_tonemapper/Android.bp" 2>/dev/null; then
+            changed=1
+        else
+            echo "!!! mumba: display_intf_headers 补丁未生效，display HAL 会编译失败 !!!"
+        fi
+    fi
+    # gpu_tonemapper 重复 header_libs 键修正（幂等）
+    if [ -f "$dis/hal/gpu_tonemapper/Android.bp" ]; then
+        if [ "$(grep -c 'header_libs' "$dis/hal/gpu_tonemapper/Android.bp")" != "1" ]; then
+            python3 "$d/fix-tonemapper-bp.py" >/dev/null 2>&1
+        fi
+    fi
+
     [ "$changed" = 1 ] && echo "--- mumba: display/gralloc 兼容补丁已重新应用 ---"
     return 0
 }
