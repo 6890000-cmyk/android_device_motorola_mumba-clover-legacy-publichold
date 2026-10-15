@@ -39,15 +39,21 @@ echo "--- Source Sync Complete ---"
 
 # --- mumba: 上游仓库补丁自动应用（repo sync 后会重新打上） ---
 
-# 1) gralloc 源码与头文件版本不匹配（reserved_size 只存在于 METADATA_V2）
-apply_mumba_gralloc_fix() {
+# 1) CAF display/gralloc：源码与头文件版本不匹配（private_handle_t 缺 reserved_size 等字段）
+apply_mumba_display_fixes() {
     local top="${ANDROID_BUILD_TOP:-$(pwd)}"
-    local f="$top/hardware/qcom-caf/sm8450-6.6/display/hal/gralloc/gr_utils.cpp"
-    local fix="$top/device/motorola/mumba/patches/fix-gralloc-gr_utils.py"
-    [ -f "$f" ] && [ -f "$fix" ] || return 0
-    grep -q 'MFIX_METADATA_V2' "$f" && return 0
-    echo "--- mumba: fixing gralloc gr_utils.cpp (METADATA_V2 guard) ---"
-    python3 "$fix" >/dev/null 2>&1 || echo "!!! mumba: gralloc 补丁失败，显示 HAL 可能编译不过 !!!"
+    local d="$top/device/motorola/mumba/patches"
+    local g="$top/hardware/qcom-caf/sm8450-6.6/display/hal/gralloc/gr_utils.cpp"
+    local b="$top/hardware/qcom-caf/sm8450-6.6/display/hal/sdm/libs/dal/Android.bp"
+    [ -d "$top/hardware/qcom-caf/sm8450-6.6/display" ] || return 0
+    # gr_utils.cpp：METADATA_V2 字段不存在时不再引用（两步，幂等）
+    [ -f "$g" ] && ! grep -q 'MFIX_METADATA_V2' "$g" && python3 "$d/fix-gralloc-gr_utils.py" >/dev/null 2>&1
+    [ -f "$g" ] && grep -q 'MFIX_METADATA_V2' "$g" && python3 "$d/fix-gralloc-gr_utils-final.py" >/dev/null 2>&1
+    # 其余三处文件（25 个引用点）
+    python3 "$d/fix-gralloc-3files.py" >/dev/null 2>&1
+    # libsdmdal 缺 display_headers 声明
+    [ -f "$b" ] && ! grep -q 'MFIX_DISPLAY_HEADERS' "$b" && python3 "$d/fix-sdmdal-display-headers.py" >/dev/null 2>&1
+    echo "--- mumba: display/gralloc 兼容补丁已检查 ---"
 }
 
 # 2) vendor/lineage 内核头规则（按内核模式自动应用/撤销）
@@ -84,5 +90,5 @@ apply_mumba_vendor_patch() {
     fi
 }
 
-apply_mumba_gralloc_fix
+apply_mumba_display_fixes
 apply_mumba_vendor_patch
