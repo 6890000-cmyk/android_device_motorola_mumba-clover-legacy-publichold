@@ -37,26 +37,46 @@ clone_if_missing "https://github.com/parmodjiris-source/android_hardware_dolby.g
 
 echo "--- Source Sync Complete ---"
 
-# --- mumba: 上游仓库补丁自动应用（repo sync 后会重新打上） ---
+# --- mumba: 上游仓库补丁自动应用（repo sync 后会重新打上，失败会显式告警） ---
 
-# 1) CAF display/gralloc：源码与头文件版本不匹配（private_handle_t 缺 reserved_size 等字段）
 apply_mumba_display_fixes() {
     local top="${ANDROID_BUILD_TOP:-$(pwd)}"
     local d="$top/device/motorola/mumba/patches"
-    local g="$top/hardware/qcom-caf/sm8450-6.6/display/hal/gralloc/gr_utils.cpp"
-    local b="$top/hardware/qcom-caf/sm8450-6.6/display/hal/sdm/libs/dal/Android.bp"
-    [ -d "$top/hardware/qcom-caf/sm8450-6.6/display" ] || return 0
-    # gr_utils.cpp：METADATA_V2 字段不存在时不再引用（两步，幂等）
-    [ -f "$g" ] && ! grep -q 'MFIX_METADATA_V2' "$g" && python3 "$d/fix-gralloc-gr_utils.py" >/dev/null 2>&1
-    [ -f "$g" ] && grep -q 'MFIX_METADATA_V2' "$g" && python3 "$d/fix-gralloc-gr_utils-final.py" >/dev/null 2>&1
-    # 其余三处文件（25 个引用点）
-    python3 "$d/fix-gralloc-3files.py" >/dev/null 2>&1
-    # libsdmdal 缺 display_headers 声明
-    [ -f "$b" ] && ! grep -q 'MFIX_DISPLAY_HEADERS' "$b" && python3 "$d/fix-sdmdal-display-headers.py" >/dev/null 2>&1
-    echo "--- mumba: display/gralloc 兼容补丁已检查 ---"
+    local dis="$top/hardware/qcom-caf/sm8450-6.6/display"
+    [ -d "$dis" ] || return 0
+    local g="$dis/hal/gralloc/gr_utils.cpp"
+    local b="$dis/hal/sdm/libs/dal/Android.bp"
+    local changed=0
+
+    # 1) gr_utils.cpp：两段式（先加 #ifdef，再彻底不引用缺失字段）
+    if [ -f "$g" ] && ! grep -q 'MFIX_NORESERVED' "$g"; then
+        grep -q 'MFIX_METADATA_V2' "$g" || python3 "$d/fix-gralloc-gr_utils.py" >/dev/null 2>&1
+        python3 "$d/fix-gralloc-gr_utils-final.py" >/dev/null 2>&1
+        grep -q 'MFIX_NORESERVED' "$g" \
+            && changed=1 \
+            || echo "!!! mumba: gr_utils.cpp 补丁未生效，display HAL 可能编译失败 !!!"
+    fi
+
+    # 2) gr_buf_mgr / SnapMetadataManager / SnapAllocCore：25 处引用
+    if ! grep -q 'MFIX_NORESERVED' "$dis/hal/gralloc/gr_buf_mgr.cpp" 2>/dev/null; then
+        python3 "$d/fix-gralloc-3files.py" >/dev/null 2>&1
+        grep -q 'MFIX_NORESERVED' "$dis/hal/gralloc/gr_buf_mgr.cpp" \
+            && changed=1 \
+            || echo "!!! mumba: gralloc 三文件补丁未生效，display HAL 可能编译失败 !!!"
+    fi
+
+    # 3) libsdmdal 缺 display_headers
+    if [ -f "$b" ] && ! grep -q 'MFIX_DISPLAY_HEADERS' "$b"; then
+        python3 "$d/fix-sdmdal-display-headers.py" >/dev/null 2>&1
+        grep -q 'MFIX_DISPLAY_HEADERS' "$b" \
+            && changed=1 \
+            || echo "!!! mumba: libsdmdal display_headers 补丁未生效，SDM HAL 会编译失败 !!!"
+    fi
+
+    [ "$changed" = 1 ] && echo "--- mumba: display/gralloc 兼容补丁已重新应用 ---"
+    return 0
 }
 
-# 2) vendor/lineage 内核头规则（按内核模式自动应用/撤销）
 apply_mumba_vendor_patch() {
     local top="${ANDROID_BUILD_TOP:-$(pwd)}"
     local repo="$top/vendor/lineage"
@@ -86,7 +106,7 @@ apply_mumba_vendor_patch() {
                 || ( cd "$repo" && patch -p1 -R < "$patch" >/dev/null 2>&1 ) \
                 || echo "!!! mumba: 撤销失败，请手动检查 vendor/lineage !!!"
         fi
-        echo "--- mumba: 提醒：OSS 模式下内核头生成规则需重新处理（make 被 PATH 白名单禁止），见 OSS内核切换备忘.md 第 7.3 节 ---"
+        echo "--- mumba: 提醒：OSS 模式下内核头生成规则需重新处理（make 被 PATH 白名单禁止）---"
     fi
 }
 
